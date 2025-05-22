@@ -1,0 +1,2 @@
+- Always use pnpm to install dependencies and run scripts
+- Use the Node.js version defined in package.json file under "engines"
