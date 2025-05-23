@@ -104,6 +104,10 @@ export default {
       .where('id', '=', taskId)
       .executeTakeFirst()
 
+    if (Number(updateRes.numChangedRows) === 0) {
+      return standardError(new Error('Already updated task'), {userId: viewerId})
+    }
+
     dataLoader.clearAll('tasks')
     const newTask = await dataLoader.get('tasks').loadNonNull(taskId)
     // TODO: get users in the same location
