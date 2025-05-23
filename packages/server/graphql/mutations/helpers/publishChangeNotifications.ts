@@ -51,63 +51,16 @@ const publishChangeNotifications = async (
     analytics.mentionedOnTask(changeUser, mentionedUserId, task.teamId)
   })
   // add in the assignee changes
-  // When unassigning a task (task.userId is null), create notification for the original assignee only
   if (oldTask.userId && oldTask.userId !== task.userId) {
-    // Add validation logging
-    console.log('[VALIDATION] Task assignment change detected:', {
-      oldUserId: oldTask.userId,
-      newUserId: task.userId,
-      taskId: task.id
+    notificationsToAdd.push({
+      id: generateUID(),
+      type: 'TASK_INVOLVES' as const,
+      userId: task.userId,
+      involvement: 'ASSIGNEE' as const,
+      taskId: task.id,
+      changeAuthorId,
+      teamId: task.teamId
     })
-
-    // Check if we would have created an invalid notification without our fix
-    if (task.userId === null) {
-      console.log(
-        '[VALIDATION] Bug scenario detected: Task unassignment that would create invalid notifications'
-      )
-
-      // Simulate what would happen WITHOUT our fix
-      const simulatedNotifications = []
-
-      // This simulates the old code behavior WITHOUT the null check
-      // (Note: don't remove your actual null check)
-      simulatedNotifications.push({
-        id: 'simulated',
-        type: 'TASK_INVOLVES',
-        userId: task.userId, // This would be null
-        taskId: task.id
-      })
-
-      console.log(
-        '[VALIDATION] Invalid notifications that would be created without fix:',
-        simulatedNotifications.filter((n) => !n.userId).length
-      )
-    }
-
-    if (task.userId !== changeUser.id && !usersToIgnore.includes(task.userId)) {
-      notificationsToAdd.push({
-        id: generateUID(),
-        type: 'TASK_INVOLVES' as const,
-        userId: task.userId,
-        involvement: 'ASSIGNEE' as const,
-        taskId: task.id,
-        changeAuthorId,
-        teamId: task.teamId
-      })
-    }
-
-    // Make sure we only add notifications with a valid userId - never null
-    if (oldTask.userId !== changeUser.id && !usersToIgnore.includes(oldTask.userId)) {
-      notificationsToAdd.push({
-        id: generateUID(),
-        type: 'TASK_INVOLVES' as const,
-        userId: oldTask.userId,
-        involvement: 'ASSIGNEE' as const,
-        taskId: task.id,
-        changeAuthorId,
-        teamId: task.teamId
-      })
-    }
 
     userIdsToRemove.push(oldTask.userId)
   }
