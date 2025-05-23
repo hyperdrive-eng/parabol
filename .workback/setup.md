@@ -32,6 +32,8 @@ Visit: http://localhost:3000
 pnpm db:stop
 # Delete node_modules just in case to force a fresh install
 rm -rf node_modules/
+# There is a node process that keeps restarting on port 2999. Kill it with
+pkill -f "generateGraphQLArtifacts"
 ```
 
 ### Auth
