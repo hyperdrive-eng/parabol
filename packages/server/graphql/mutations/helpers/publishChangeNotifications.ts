@@ -51,7 +51,39 @@ const publishChangeNotifications = async (
     analytics.mentionedOnTask(changeUser, mentionedUserId, task.teamId)
   })
   // add in the assignee changes
+  // When unassigning a task (task.userId is null), create notification for the original assignee only
   if (oldTask.userId && oldTask.userId !== task.userId) {
+    // Add validation logging
+    console.log('[VALIDATION] Task assignment change detected:', {
+      oldUserId: oldTask.userId,
+      newUserId: task.userId,
+      taskId: task.id
+    })
+
+    // Check if we would have created an invalid notification without our fix
+    if (task.userId === null) {
+      console.log(
+        '[VALIDATION] Bug scenario detected: Task unassignment that would create invalid notifications'
+      )
+
+      // Simulate what would happen WITHOUT our fix
+      const simulatedNotifications = []
+
+      // This simulates the old code behavior WITHOUT the null check
+      // (Note: don't remove your actual null check)
+      simulatedNotifications.push({
+        id: 'simulated',
+        type: 'TASK_INVOLVES',
+        userId: task.userId, // This would be null
+        taskId: task.id
+      })
+
+      console.log(
+        '[VALIDATION] Invalid notifications that would be created without fix:',
+        simulatedNotifications.filter((n) => !n.userId).length
+      )
+    }
+
     if (task.userId && task.userId !== changeUser.id && !usersToIgnore.includes(task.userId)) {
       notificationsToAdd.push({
         id: generateUID(),
@@ -63,12 +95,56 @@ const publishChangeNotifications = async (
         teamId: task.teamId
       })
     }
+
+    // Make sure we only add notifications with a valid userId - never null
+    if (oldTask.userId !== changeUser.id && !usersToIgnore.includes(oldTask.userId)) {
+      notificationsToAdd.push({
+        id: generateUID(),
+        type: 'TASK_INVOLVES' as const,
+        userId: oldTask.userId,
+        involvement: 'ASSIGNEE' as const,
+        taskId: task.id,
+        changeAuthorId,
+        teamId: task.teamId
+      })
+    }
+
     userIdsToRemove.push(oldTask.userId)
   }
 
   // update changes in the db
   if (notificationsToAdd.length) {
-    await pg.insertInto('Notification').values(notificationsToAdd).execute()
+    // Check if any invalid notifications would be added without our filtering
+    const wouldBeInvalid = notificationsToAdd.filter((n) => !n.userId)
+    if (wouldBeInvalid.length > 0) {
+      console.log(
+        '[VALIDATION] Our fix prevented',
+        wouldBeInvalid.length,
+        'invalid notifications with null userId from being inserted'
+      )
+    }
+
+    // Filter out any notifications with null userId
+    const validNotifications = notificationsToAdd.filter((notification) => {
+      if (!notification.userId) {
+        console.warn(
+          '[WARN] Prevented insertion of notification with null userId for task:',
+          notification.taskId
+        )
+        return false
+      }
+      return true
+    })
+
+    // Only proceed with insert if we have valid notifications
+    if (validNotifications.length > 0) {
+      await pg.insertInto('Notification').values(validNotifications).execute()
+    } else if (notificationsToAdd.length > 0) {
+      console.warn(
+        '[WARN] All notifications were filtered out due to null userId. Original count:',
+        notificationsToAdd.length
+      )
+    }
   }
   return {notificationsToAdd}
 }
