@@ -11,3 +11,29 @@ pnpm db:start
 pnpm relay:build
 pnpn dev
 ```
+
+We gave ourselves super user permissions to play around in http://localhost:3000/admin/graphql with this script:
+
+```
+pnpm node ./scripts/toolbox/assignSURole.js --add you@example.com
+```
+
+You can run GraphQL mutations in `localhost:3000/admin/graphql`:
+
+```graphql
+mutation upgradetoEnterprise {
+  draftEnterpriseInvoice(
+    orgId: "XXXXX",
+    quantity: <number>,
+    email: "exampeuser@email.com",
+    apEmail: "invoice@email.com",
+    plan: "stripe_api_price_id") {
+    organization {
+      tier
+    }
+    error {
+      message
+    }
+  }
+}
+```
