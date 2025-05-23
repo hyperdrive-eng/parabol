@@ -98,30 +98,11 @@ export default {
       updates.userId = inputUserId
     }
 
-    // Debug logging
-    console.log(
-      '[DEBUG] Task update query:',
-      JSON.stringify({
-        table: 'Task',
-        set: updates,
-        where: {id: taskId}
-      })
-    )
-
-    try {
-      const updateRes = await pg
-        .updateTable('Task')
-        .set(updates)
-        .where('id', '=', taskId)
-        .executeTakeFirst()
-
-      if (Number(updateRes.numChangedRows) === 0) {
-        return standardError(new Error('Already updated task'), {userId: viewerId})
-      }
-    } catch (error) {
-      console.error('[ERROR] Task update failed:', error)
-      throw error
-    }
+    const updateRes = await pg
+      .updateTable('Task')
+      .set(updates)
+      .where('id', '=', taskId)
+      .executeTakeFirst()
 
     dataLoader.clearAll('tasks')
     const newTask = await dataLoader.get('tasks').loadNonNull(taskId)
