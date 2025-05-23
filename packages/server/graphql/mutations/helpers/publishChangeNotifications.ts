@@ -84,7 +84,7 @@ const publishChangeNotifications = async (
       )
     }
 
-    if (task.userId && task.userId !== changeUser.id && !usersToIgnore.includes(task.userId)) {
+    if (task.userId !== changeUser.id && !usersToIgnore.includes(task.userId)) {
       notificationsToAdd.push({
         id: generateUID(),
         type: 'TASK_INVOLVES' as const,
@@ -114,37 +114,7 @@ const publishChangeNotifications = async (
 
   // update changes in the db
   if (notificationsToAdd.length) {
-    // Check if any invalid notifications would be added without our filtering
-    const wouldBeInvalid = notificationsToAdd.filter((n) => !n.userId)
-    if (wouldBeInvalid.length > 0) {
-      console.log(
-        '[VALIDATION] Our fix prevented',
-        wouldBeInvalid.length,
-        'invalid notifications with null userId from being inserted'
-      )
-    }
-
-    // Filter out any notifications with null userId
-    const validNotifications = notificationsToAdd.filter((notification) => {
-      if (!notification.userId) {
-        console.warn(
-          '[WARN] Prevented insertion of notification with null userId for task:',
-          notification.taskId
-        )
-        return false
-      }
-      return true
-    })
-
-    // Only proceed with insert if we have valid notifications
-    if (validNotifications.length > 0) {
-      await pg.insertInto('Notification').values(validNotifications).execute()
-    } else if (notificationsToAdd.length > 0) {
-      console.warn(
-        '[WARN] All notifications were filtered out due to null userId. Original count:',
-        notificationsToAdd.length
-      )
-    }
+    await pg.insertInto('Notification').values(notificationsToAdd).execute()
   }
   return {notificationsToAdd}
 }
