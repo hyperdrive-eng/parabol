@@ -81,21 +81,48 @@ export default {
     }
     // RESOLUTION
     const teamMembers = await dataLoader.get('teamMembersByTeamId').load(teamId)
-    const updateRes = await pg
-      .updateTable('Task')
-      .set({
-        content: content ? validContent : undefined,
-        plaintextContent,
-        sortOrder: sortOrder || undefined,
-        status: status || undefined,
-        userId: inputUserId || undefined,
-        tags: content ? getTagsFromTipTapTask(validContent) : undefined
-      })
-      .where('id', '=', taskId)
-      .executeTakeFirst()
-    if (Number(updateRes.numChangedRows) === 0) {
-      return standardError(new Error('Already updated task'), {userId: viewerId})
+
+    // Construct updates object with explicit null handling
+    const updates: any = {
+      content: content ? validContent : undefined,
+      plaintextContent,
+      sortOrder: sortOrder || undefined,
+      status: status || undefined,
+      tags: content ? getTagsFromTipTapTask(validContent) : undefined
     }
+
+    // Handle userId update explicitly
+    if (inputUserId === null) {
+      updates.userId = null
+    } else if (inputUserId !== undefined) {
+      updates.userId = inputUserId
+    }
+
+    // Debug logging
+    console.log(
+      '[DEBUG] Task update query:',
+      JSON.stringify({
+        table: 'Task',
+        set: updates,
+        where: {id: taskId}
+      })
+    )
+
+    try {
+      const updateRes = await pg
+        .updateTable('Task')
+        .set(updates)
+        .where('id', '=', taskId)
+        .executeTakeFirst()
+
+      if (Number(updateRes.numChangedRows) === 0) {
+        return standardError(new Error('Already updated task'), {userId: viewerId})
+      }
+    } catch (error) {
+      console.error('[ERROR] Task update failed:', error)
+      throw error
+    }
+
     dataLoader.clearAll('tasks')
     const newTask = await dataLoader.get('tasks').loadNonNull(taskId)
     // TODO: get users in the same location
