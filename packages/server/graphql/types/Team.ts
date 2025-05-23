@@ -74,7 +74,7 @@ const Team: GraphQLObjectType = new GraphQLObjectType<ITeam, GQLContext>({
         {meetingId},
         {authToken, dataLoader}: GQLContext
       ) => {
-        if (!isTeamMember(authToken, teamId)) return []
+        if (!isTeamMember(authToken, teamId)) return null
         const pg = getKysely()
         const viewerId = getUserId(authToken)
         const teamMemberId = toTeamMemberId(teamId, viewerId)
@@ -169,7 +169,7 @@ const Team: GraphQLObjectType = new GraphQLObjectType<ITeam, GQLContext>({
         {authToken, dataLoader}: GQLContext
       ) => {
         // the implicit business logic says client will never request settings for a foregin team
-        if (!isTeamMember(authToken, teamId)) return []
+        if (!isTeamMember(authToken, teamId)) return null
         return dataLoader.get('meetingSettingsByType').load({teamId, meetingType})
       }
     },
@@ -240,7 +240,7 @@ const Team: GraphQLObjectType = new GraphQLObjectType<ITeam, GQLContext>({
         {meetingId},
         {authToken, dataLoader}: GQLContext
       ) => {
-        if (!isTeamMember(authToken, teamId)) return []
+        if (!isTeamMember(authToken, teamId)) return null
         const meeting = await dataLoader.get('newMeetings').load(meetingId)
         if (meeting && meeting.teamId === teamId) return meeting
         return null
