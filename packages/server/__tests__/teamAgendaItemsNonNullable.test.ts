@@ -24,17 +24,19 @@ test('Team.agendaItems should not return null for non-team members', async () =>
     },
     authToken: nonMemberAuthToken
   })
-  
-  console.log("Team query result:", JSON.stringify(checkTeamQuery, null, 2))
-  
+
+  console.log('Team query result:', JSON.stringify(checkTeamQuery, null, 2))
+
   // If the team resolver prevents non-members from accessing the team at all,
   // we need to modify our approach
   if (!checkTeamQuery.data?.team) {
-    console.log("Non-members cannot access the team at all - this explains why we're not seeing the agendaItems error")
+    console.log(
+      "Non-members cannot access the team at all - this explains why we're not seeing the agendaItems error"
+    )
     // Test passes in this case because we've identified why the original error doesn't occur
     return
   }
-  
+
   // Try the query with agendaItems included
   const teamAgendaItemsQuery = await sendPublic({
     query: `
@@ -54,12 +56,14 @@ test('Team.agendaItems should not return null for non-team members', async () =>
     authToken: nonMemberAuthToken
   })
 
-  console.log("AgendaItems query result:", JSON.stringify(teamAgendaItemsQuery, null, 2))
-  
+  console.log('AgendaItems query result:', JSON.stringify(teamAgendaItemsQuery, null, 2))
+
   // The test passes if:
   // 1. We get the expected error about non-nullable field, OR
   // 2. We've determined that non-members can't access the team at all
   if (teamAgendaItemsQuery.errors) {
-    expect(teamAgendaItemsQuery.errors[0].message).toContain('Cannot return null for non-nullable field Team.agendaItems')
+    expect(teamAgendaItemsQuery.errors[0].message).toContain(
+      'Cannot return null for non-nullable field Team.agendaItems'
+    )
   }
 })
