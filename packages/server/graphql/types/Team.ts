@@ -272,7 +272,7 @@ const Team: GraphQLObjectType = new GraphQLObjectType<ITeam, GQLContext>({
         _args: unknown,
         {authToken, dataLoader}: GQLContext
       ) {
-        if (!isTeamMember(authToken, teamId)) return null
+        if (!isTeamMember(authToken, teamId)) return []
         return dataLoader.get('agendaItemsByTeamId').load(teamId)
       }
     },
